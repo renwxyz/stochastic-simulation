@@ -13,6 +13,7 @@
 
 #include <iostream>
 using namespace std;
+using namespace std::chrono;
 
 int main(){
 
@@ -38,10 +39,36 @@ int main(){
     }
 
     srand(time(0)); // Seed random
-    double lambda = 10; // Mean waiting time 1/lambda = 2 detik
+    double lambda = 3; // Mean waiting time 1/lambda = 2 detik
     string req_message = "Hello Server!\n";
+    int no = 1;
+
+    cout << left
+         << setw(3)  << "No" << "  "
+         << setw(6) << "Status" << "  "
+         << setw(13) << "Send Time" << "  "
+         << setw(16) << "Waiting Time (s)" << "  "
+         << setw(6) << "Resp-server" << endl; 
+
+    cout << left
+         << setw(3)  << "---" << "  "
+         << setw(6) << "------" << "  "
+         << setw(13) << "-------------" << "  "
+         << setw(16) << "----------------" << "  "
+         << setw(6) << "------" << endl;
 
     while (true){
+
+        auto now_sys = system_clock::now();
+        time_t now_c = system_clock::to_time_t(now_sys);
+        tm local_time = *localtime(&now_c);
+
+        int hour = local_time.tm_hour;
+        int min  = local_time.tm_min;
+        int sec  = local_time.tm_sec;
+
+        auto now_steady = steady_clock::now();
+
         double U = (rand()+1.0)/(RAND_MAX + 1.0);
         double waiting_time = -log(U)/lambda;
         
@@ -49,7 +76,11 @@ int main(){
         if (sleep_ms < 1) sleep_ms = 1;
 
         this_thread::sleep_for(chrono::milliseconds(sleep_ms));
-        send(client_fd, req_message.c_str(),req_message.length(),0);
+        
+        string req_status = "Sent";
+        if (send(client_fd, req_message.c_str(),req_message.length(),0) < 0){
+            req_status = "failed";
+        }
 
         char buffer[1024];
         memset(buffer, 0, sizeof(buffer));
@@ -63,7 +94,18 @@ int main(){
             break;
         }
 
-        cout << "Request send! | Waiting time: " << fixed << setprecision(2) << waiting_time << " | " << "Respon server: " << buffer;
+        cout << left
+             << setw(3) << no << "  "
+             << setw(6) << req_status << "  "
+             << setw(13)
+             << ((hour < 10 ? "0" : "") + to_string(hour) + ":" +
+                 (min  < 10 ? "0" : "") + to_string(min)  + ":" +
+                 (sec  < 10 ? "0" : "") + to_string(sec))
+             << right
+             << setw(12)  << fixed << setprecision(2) << waiting_time
+             << setw(12)  << buffer;
+        
+        no++;
     }
 
     close(client_fd);
