@@ -10,6 +10,7 @@
 
 #include <iomanip>
 #include <cstring>
+
 #include <iostream>
 using namespace std;
 
@@ -37,7 +38,7 @@ int main(){
     }
 
     srand(time(0)); // Seed random
-    double lambda = 0.5; // Mean waiting time 1/lambda = 2 detik
+    double lambda = 10; // Mean waiting time 1/lambda = 2 detik
     string req_message = "Hello Server!\n";
 
     while (true){
@@ -53,6 +54,14 @@ int main(){
         char buffer[1024];
         memset(buffer, 0, sizeof(buffer));
         int bytes_received = recv(client_fd, buffer, sizeof(buffer)-1, 0);
+
+        if(bytes_received < 0){
+            cout << "[Error]: recv failed\n";
+            break;
+        } else if (bytes_received == 0){
+            cout << "Disconnected from server\n";
+            break;
+        }
 
         cout << "Request send! | Waiting time: " << fixed << setprecision(2) << waiting_time << " | " << "Respon server: " << buffer;
     }
